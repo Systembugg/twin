@@ -1,0 +1,69 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: twin_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: twin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-twinpassword321}
+      POSTGRES_DB: twin
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twin -d twin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: twin_redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel notice
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: twin_api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      TWIN_DATABASE_URL: postgresql://twin:${POSTGRES_PASSWORD:-twinpassword321}@postgres:5432/twin
+      TWIN_REDIS_URL: redis://redis:6379/0
+      TWIN_API_KEY: ${TWIN_API_KEY}
+      TWIN_BASE_URL: ${TWIN_BASE_URL}
+      TWIN_MODEL: ${TWIN_MODEL}
+      TWIN_MODEL_PRICE: ${TWIN_MODEL_PRICE}
+      TWIN_WORKSPACE_ROOT: /workspaces
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: python -m twin.runtime.worker
+    environment:
+      TWIN_DATABASE_URL: postgresql://twin:${POSTGRES_PASSWORD:-twinpassword321}@postgres:5432/twin
+      TWIN_REDIS_URL: redis://redis:6379/0
+      TWIN_API_KEY: ${TWIN_API_KEY}
+      TWIN_BASE_URL: ${TWIN_BASE_URL}
+      TWIN_MODEL: ${TWIN_MODEL}
+      TWIN_MODEL_PRICE: ${TWIN_MODEL_PRICE}
+      TWIN_WORKSPACE_ROOT: /workspaces
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

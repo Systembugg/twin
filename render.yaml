@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: twin-enterprise-api
+    env: docker
+    plan: free
+    dockerCommand: bash start_render.sh
+    envVars:
+      - key: TWIN_DATABASE_URL
+        fromDatabase:
+          name: twin-db
+          property: connectionString
+      - key: TWIN_REDIS_URL
+        fromService:
+          type: redis
+          name: twin-redis
+          property: connectionString
+      - key: TWIN_API_KEY
+        sync: false
+      - key: TWIN_BASE_URL
+        sync: false
+      - key: TWIN_MODEL
+        sync: false
+      - key: TWIN_MODEL_PRICE
+        sync: false
+
+databases:
+  - name: twin-db
+    databaseName: twin
+    user: twin
+    plan: free
+
+redis:
+  - name: twin-redis
+    plan: free

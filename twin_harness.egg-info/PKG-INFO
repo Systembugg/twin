@@ -1,0 +1,19 @@
+Metadata-Version: 2.4
+Name: twin-harness
+Version: 0.1.0
+Summary: Multi-tenant agentic harness for a digital-twin assistant
+Requires-Python: >=3.11
+Requires-Dist: anthropic>=0.116.0
+Requires-Dist: pyjwt[crypto]>=2.8.0
+Provides-Extra: server
+Requires-Dist: fastapi>=0.115; extra == "server"
+Requires-Dist: uvicorn[standard]>=0.30; extra == "server"
+Requires-Dist: redis>=5.0; extra == "server"
+Requires-Dist: asyncpg>=0.29; extra == "server"
+Requires-Dist: pydantic>=2.7; extra == "server"
+Requires-Dist: pyjwt[crypto]>=2.8.0; extra == "server"
+Provides-Extra: openai
+Requires-Dist: openai>=1.40; extra == "openai"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
