@@ -14,7 +14,7 @@ WORKDIR /app
 RUN mkdir -p /workspaces && chmod 777 /workspaces
 
 # Copy project definition and source code
-COPY pyproject.toml README.md schema.sql ./
+COPY pyproject.toml README.md schema.sql start_render.sh ./
 COPY twin ./twin
 
 # Install the package with server and openai dependencies
