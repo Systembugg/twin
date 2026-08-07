@@ -23,12 +23,12 @@ services:
       - key: TWIN_MODEL_PRICE
         sync: false
 
+  - type: redis
+    name: twin-redis
+    plan: free
+
 databases:
   - name: twin-db
     databaseName: twin
     user: twin
-    plan: free
-
-redis:
-  - name: twin-redis
     plan: free
