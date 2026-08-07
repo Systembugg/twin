@@ -26,6 +26,7 @@ services:
   - type: redis
     name: twin-redis
     plan: free
+    ipAllowList: []
 
 databases:
   - name: twin-db
