@@ -53,9 +53,9 @@ async def run_surveillance_monitor(server_url: str):
                             if line.startswith("data: "):
                                 raw = line[6:].strip()
                                 print_formatted_event(raw)
-            except Exception as exc:
-                print(f"⚠️ Remote stream error ({exc}). Retrying in 2 seconds...")
-                await asyncio.sleep(2.0)
+            except Exception:
+                # Silent auto-reconnect on idle HTTP stream timeouts
+                await asyncio.sleep(1.0)
     else:
         # Local File Tail Mode
         LOCAL_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
