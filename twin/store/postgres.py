@@ -29,7 +29,40 @@ class PostgresStore:
         import asyncpg
 
         pool = await asyncpg.create_pool(dsn, min_size=min_size, max_size=max_size)
-        return cls(pool)
+        store = cls(pool)
+        await store.init_schema()
+        return store
+
+    async def init_schema(self) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS runs (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    session_id TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    messages JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    scratch JSONB NOT NULL DEFAULT '{}'::jsonb,
+                    iterations INT NOT NULL DEFAULT 0,
+                    spend_usd NUMERIC(12, 6) NOT NULL DEFAULT 0,
+                    error TEXT,
+                    idempotency_key TEXT,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_user_idempotency 
+                    ON runs (user_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
+
+                CREATE TABLE IF NOT EXISTS run_events (
+                    seq BIGSERIAL PRIMARY KEY,
+                    run_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+                    ts TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+                CREATE INDEX IF NOT EXISTS idx_events_run_id ON run_events (run_id, user_id, seq);
+            """)
 
     async def close(self) -> None:
         await self._pool.close()
