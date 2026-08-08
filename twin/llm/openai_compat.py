@@ -304,7 +304,11 @@ class OpenAICompatibleClient:
                     if delta is None:
                         continue
 
+                    reasoning_piece = getattr(delta, "reasoning_content", None) or getattr(delta, "reasoning", None)
                     piece = getattr(delta, "content", None)
+                    if reasoning_piece:
+                        if on_text is not None:
+                            await on_text(f"[Thinking]: {reasoning_piece}")
                     if piece:
                         text_parts.append(piece)
                         if on_text is not None:
