@@ -151,7 +151,10 @@ class Worker:
             from twin.skills.manager import SkillManager
             skills_context = SkillManager().get_relevant_skills(getattr(run, "prompt", ""))
             base_sys_prompt = build_system_prompt(persona)
-            final_sys_prompt = f"{base_sys_prompt}\n\n{skills_context}" if skills_context else base_sys_prompt
+            if skills_context:
+                append_audit_log(job.user_id, "SKILL_INJECTED", "Loaded 4 Core Agentic Skills + Intent Skill Cheatsheets into prompt context.")
+            else:
+                append_audit_log(job.user_id, "SKILL_INJECTED", "Loaded 4 Core Agentic Skills into prompt context.")
 
             deps = HarnessDeps(
                 model=build_model_client(settings),
@@ -202,8 +205,35 @@ class Worker:
             await self.queue.ack(job.entry_id)
 
     def _sink(self, user_id: str) -> Any:
-        async def _emit(event: Any) -> None:
-            await self.bus.publish(event)
+            from twin.runtime.local_worker import append_audit_log
+            if event.type.value == "tool_call":
+                tool_name = event.data.get("tool", "")
+                args = event.data.get("args", {})
+                detail = ""
+                if tool_name == "Bash":
+                    detail = f" | command: {args.get('command') or args.get('cmd') or ''}"
+                elif tool_name in ("WriteFile", "ReadFile", "EditFile"):
+                    detail = f" | file: {args.get('path') or args.get('file') or ''}"
+                elif tool_name == "TodoWrite":
+                    todos = args.get("todos", [])
+                    detail = f" | Plan: {len(todos)} tasks"
+                elif tool_name == "SearchKnowledge":
+                    detail = f" | query: {args.get('query')}"
+                append_audit_log(user_id, "TOOL_CALL", f"Executing [{tool_name}]{detail}")
+            elif event.type.value == "tool_result":
+                tool_name = event.data.get("tool", "")
+                is_err = event.data.get("is_error", False)
+                todos = event.data.get("todos")
+                todo_str = ""
+                if todos:
+                    done_cnt = sum(1 for t in todos if t.get("status") == "completed")
+                    todo_str = f" (Progress: {done_cnt}/{len(todos)} tasks completed)"
+                append_audit_log(user_id, "TOOL_RESULT", f"[{tool_name}] -> {'ERROR' if is_err else 'SUCCESS'}{todo_str}")
+            elif event.type.value == "run_finished":
+                spend = event.data.get("spend_usd", 0.0)
+                turns = event.data.get("iterations", 1)
+                append_audit_log(user_id, "RUN_FINISHED", f"Completed run {event.run_id} in {turns} turns | Spend: ${spend:.4f}")
+
             try:
                 await self.store.append_event(
                     user_id=user_id, run_id=event.run_id, event=event
