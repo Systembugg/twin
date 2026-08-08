@@ -64,11 +64,12 @@ class Caps:
 
 @dataclass(frozen=True)
 class UserQuota:
-    """Rolling per-user budget, enforced in Redis before a run is admitted."""
+    """Rolling per-user budget aligned with aicredits.in API rate limits."""
 
-    tokens_per_hour: int = 2_000_000
-    runs_per_hour: int = 120
-    max_concurrent_runs: int = 3
+    tokens_per_hour: int = 5_000_000
+    runs_per_minute: int = 60
+    runs_per_hour: int = 3600
+    max_concurrent_runs: int = 5
 
 
 @dataclass(frozen=True)
