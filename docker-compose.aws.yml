@@ -36,7 +36,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: twin-worker
     restart: always
     command: python -m twin.runtime.worker
     environment:
