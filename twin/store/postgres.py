@@ -79,13 +79,27 @@ class PostgresStore:
     ) -> Run:
         new_id = run_id or Run.new_id()
         async with self._pool.acquire() as conn:
+            if idempotency_key:
+                row = await conn.fetchrow(
+                    """
+                    SELECT id, user_id, session_id, status, messages, scratch,
+                           iterations, spend_usd, error,
+                           extract(epoch from created_at) AS created_at,
+                           extract(epoch from updated_at) AS updated_at
+                    FROM runs WHERE user_id = $1 AND idempotency_key = $2
+                    """,
+                    user_id,
+                    idempotency_key,
+                )
+                if row:
+                    return _row_to_run(row)
+
             row = await conn.fetchrow(
                 """
-                INSERT INTO runs (id, user_id, session_id, status, messages, scratch,
-                                  idempotency_key)
+                INSERT INTO runs (id, user_id, session_id, status, messages, scratch, idempotency_key)
                 VALUES ($1, $2, $3, $4, '[]'::jsonb, '{}'::jsonb, $5)
-                ON CONFLICT (user_id, idempotency_key) DO UPDATE
-                    SET updated_at = runs.updated_at
+                ON CONFLICT (id) DO UPDATE
+                    SET updated_at = NOW()
                 RETURNING id, user_id, session_id, status, messages, scratch,
                           iterations, spend_usd, error,
                           extract(epoch from created_at) AS created_at,
