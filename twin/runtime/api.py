@@ -210,6 +210,30 @@ def create_app(
             error=run.error,
         )
 
+    @app.get("/surveillance/stream")
+    async def surveillance_stream(request: Request) -> StreamingResponse:
+        """Stream global audit log stream to remote surveillance monitors."""
+        log_path = Path(settings.workspace_root) / "audit_stream.log"
+
+        async def event_generator() -> AsyncIterator[str]:
+            if not log_path.parent.exists():
+                log_path.parent.mkdir(parents=True, exist_ok=True)
+            if not log_path.exists():
+                log_path.write_text("[SYSTEM] Audit stream initialized.\n", encoding="utf-8")
+
+            with open(log_path, "r", encoding="utf-8") as f:
+                f.seek(0, os.SEEK_END)
+                while True:
+                    if await request.is_disconnected():
+                        break
+                    line = f.readline()
+                    if not line:
+                        await asyncio.sleep(0.3)
+                        continue
+                    yield f"data: {line.strip()}\n\n"
+
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
+
     @app.get("/runs/{run_id}/events")
     async def stream_events(
         run_id: str,
