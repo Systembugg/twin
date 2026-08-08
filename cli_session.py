@@ -24,7 +24,11 @@ async def run_interactive_human_session(user_id: str, session_id: str, server_ur
     print("=" * 65)
     print("Type your message and press ENTER. Type 'exit' or 'quit' to stop.\n")
 
-    headers = {"Authorization": f"Bearer {user_id}"}
+    import jwt
+    from twin.runtime.auth import DEFAULT_TEST_SECRET
+    jwt_secret = os.environ.get("TWIN_JWT_SECRET", DEFAULT_TEST_SECRET)
+    token = jwt.encode({"sub": user_id}, jwt_secret, algorithm="HS256")
+    headers = {"Authorization": f"Bearer {token}"}
 
     async with httpx.AsyncClient(timeout=120.0) as client:
         while True:
@@ -151,7 +155,7 @@ def main():
     parser = argparse.ArgumentParser(description="Real Human Interactive Agent CLI")
     parser.add_argument("--user", type=str, default="user_1", help="User ID")
     parser.add_argument("--session", type=str, default="session_human_1", help="Session ID")
-    parser.add_argument("--url", type=str, default="http://127.0.0.1:8000", help="Server URL")
+    parser.add_argument("--url", "--server", type=str, default="http://127.0.0.1:8000", help="Server URL", dest="url")
     args = parser.parse_args()
 
     try:
