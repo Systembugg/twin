@@ -80,7 +80,24 @@ async def run_interactive_human_session(user_id: str, session_id: str, server_ur
                                 if evt_type == "tool_call":
                                     tool_name = evt_data.get("tool", "")
                                     args = evt_data.get("args", {})
-                                    print(f"🛠️ [Tool Call] Executing [{tool_name}] with args: {args}")
+                                    if tool_name == "TodoWrite":
+                                        todos = args.get("todos", [])
+                                        print("\n📋 [Plan Created / Updated]:")
+                                        for idx, t in enumerate(todos, 1):
+                                            status = "✓" if t.get("status") == "completed" else " "
+                                            print(f"   [{status}] Step {idx}: {t.get('text', '')}")
+                                        print()
+                                    elif tool_name == "Bash":
+                                        cmd = args.get("command") or args.get("cmd") or ""
+                                        print(f"🛠️ [Tool Call] Executing [Bash] -> Command: {cmd}")
+                                    elif tool_name in ("WriteFile", "ReadFile", "EditFile"):
+                                        path = args.get("path") or args.get("file") or ""
+                                        print(f"🛠️ [Tool Call] Executing [{tool_name}] -> Target File: {path}")
+                                    elif tool_name == "SearchKnowledge":
+                                        q = args.get("query", "")
+                                        print(f"🔍 [RAG Search] Querying Vector Knowledge -> '{q}'")
+                                    else:
+                                        print(f"🛠️ [Tool Call] Executing [{tool_name}] with args: {args}")
                                 elif evt_type == "tool_result":
                                     tool_name = evt_data.get("tool", "")
                                     is_err = evt_data.get("is_error", False)
