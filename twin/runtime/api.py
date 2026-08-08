@@ -125,7 +125,7 @@ def create_app(
             )
         except Exception as exc:  # noqa: BLE001
             log.exception("create_run failed user=%s", user_id)
-            raise HTTPException(status_code=500, detail="Could not create run") from exc
+            raise HTTPException(status_code=500, detail=f"Could not create run: {type(exc).__name__} - {exc}") from exc
 
         # A replayed idempotency key returns the original run without
         # enqueuing a second one.
