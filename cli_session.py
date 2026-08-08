@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import time
 import httpx
 from dotenv import load_dotenv
