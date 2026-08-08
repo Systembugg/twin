@@ -96,9 +96,15 @@ async def _process_single_job(job: dict[str, Any], store: Any, settings: Setting
 
             # Auto-inject domain skill cheatsheets based on user prompt intent
             from twin.skills.manager import SkillManager
-            skills_context = SkillManager().get_relevant_skills(message)
+            mgr = SkillManager()
+            skills_context = mgr.get_relevant_skills(message)
             base_sys_prompt = build_system_prompt(persona)
             final_sys_prompt = f"{base_sys_prompt}\n\n{skills_context}" if skills_context else base_sys_prompt
+
+            if skills_context:
+                append_audit_log(user_id, "SKILL_INJECTED", "Loaded 4 Core Agentic Skills + Intent Skill Cheatsheets into prompt context.")
+            else:
+                append_audit_log(user_id, "SKILL_INJECTED", "Loaded 4 Core Agentic Skills into prompt context.")
 
             deps = HarnessDeps(
                 model=build_model_client(settings),
