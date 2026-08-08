@@ -18,6 +18,9 @@ services:
       - TWIN_API_KEY=${TWIN_API_KEY}
       - TWIN_BASE_URL=${TWIN_BASE_URL:-https://aicredits.in/v1}
       - TWIN_MODEL=${TWIN_MODEL:-deepseek/deepseek-v4-flash-0731}
+      - TWIN_USER_TOKENS_PER_HOUR=${TWIN_USER_TOKENS_PER_HOUR:-1000000}
+      - TWIN_USER_RUNS_PER_HOUR=${TWIN_USER_RUNS_PER_HOUR:-120}
+      - TWIN_USER_MAX_CONCURRENT=${TWIN_USER_MAX_CONCURRENT:-3}
     depends_on:
       - postgres
       - redis
