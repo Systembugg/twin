@@ -23,6 +23,8 @@ services:
       - TWIN_USER_RUNS_PER_MINUTE=${TWIN_USER_RUNS_PER_MINUTE:-60}
       - TWIN_USER_RUNS_PER_HOUR=${TWIN_USER_RUNS_PER_HOUR:-3600}
       - TWIN_USER_MAX_CONCURRENT=${TWIN_USER_MAX_CONCURRENT:-5}
+    volumes:
+      - workspaces_data:/tmp/twin-workspaces
     depends_on:
       - postgres
       - redis
@@ -39,6 +41,8 @@ services:
       dockerfile: Dockerfile
     restart: always
     command: python -m twin.runtime.worker
+    volumes:
+      - workspaces_data:/tmp/twin-workspaces
     environment:
       - TWIN_DATABASE_URL=postgresql://twin:twinpassword@postgres:5432/twin
       - TWIN_REDIS_URL=redis://redis:6379/0
@@ -86,3 +90,4 @@ services:
 volumes:
   postgres_data:
   qdrant_data:
+  workspaces_data:
