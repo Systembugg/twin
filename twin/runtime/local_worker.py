@@ -73,10 +73,25 @@ async def _process_single_job(job: dict[str, Any], store: Any, settings: Setting
             message = job["message"]
 
             append_audit_log(user_id, "QUEUE_DEQUEUE", f"Processing run {run_id} from queue...")
-            await store.set_status(user_id=user_id, run_id=run_id, status=RunStatus.RUNNING)
-
             sandbox = await sandbox_factory.acquire(user_id=user_id, session_id=session_id)
-            persona = persona_from_row(user_id, {"name": f"Persona {user_id}", "summary": "Interactive User"})
+
+            # Automatically load extracted Digital Twin persona if available
+            persona_path = Path(__file__).parent.parent.parent / "analyzer_engine" / "output_persona.json"
+            persona_data = {"name": f"Persona {user_id}", "summary": "Interactive User"}
+            if persona_path.exists():
+                try:
+                    import json
+                    with open(persona_path, "r", encoding="utf-8") as f:
+                        raw_json = json.load(f)
+                        persona_data = {
+                            "name": raw_json.get("name", f"Digital Twin ({user_id})"),
+                            "summary": raw_json.get("summary", ""),
+                            "facts": raw_json.get("instructions", [])
+                        }
+                except Exception as exc:
+                    log.warning("Could not load output_persona.json: %s", exc)
+
+            persona = persona_from_row(user_id, persona_data)
             registry = default_registry(enable_subagents=False, enable_memory=False)
 
             deps = HarnessDeps(
