@@ -16,6 +16,7 @@ services:
       - TWIN_VECTOR_STORE=qdrant
       - TWIN_QDRANT_URL=http://qdrant:6333
       - TWIN_API_KEY=${TWIN_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
       - TWIN_BASE_URL=${TWIN_BASE_URL:-https://aicredits.in/v1}
       - TWIN_MODEL=${TWIN_MODEL:-deepseek/deepseek-v4-flash-0731}
       - TWIN_USER_TOKENS_PER_HOUR=${TWIN_USER_TOKENS_PER_HOUR:-5000000}
@@ -44,6 +45,7 @@ services:
       - TWIN_VECTOR_STORE=qdrant
       - TWIN_QDRANT_URL=http://qdrant:6333
       - TWIN_API_KEY=${TWIN_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
       - TWIN_BASE_URL=${TWIN_BASE_URL:-https://aicredits.in/v1}
       - TWIN_MODEL=${TWIN_MODEL:-deepseek/deepseek-v4-flash-0731}
     depends_on:
