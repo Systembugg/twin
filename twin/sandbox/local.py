@@ -43,12 +43,13 @@ class LocalSandbox:
 
     def resolve(self, path: str) -> Path:
         """Resolve a model-supplied path, or raise `PathNotAllowed`."""
-        clean_path = str(path).lstrip("/\\")
-        candidate = Path(clean_path)
-        if candidate.is_absolute() and candidate.drive:
-            resolved = candidate.resolve()
-        else:
-            resolved = (self.root / candidate).resolve()
+        # Strip drive letters (C:\) and leading slashes to prevent OS root traversal
+        clean_path = str(path)
+        if ":" in clean_path:
+            clean_path = clean_path.split(":", 1)[1]
+        clean_path = clean_path.lstrip("/\\")
+
+        resolved = (self.root / Path(clean_path)).resolve()
 
         # `is_relative_to` compares resolved paths, so `..` and symlink escapes
         # are both caught here.
