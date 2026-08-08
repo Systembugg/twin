@@ -77,11 +77,12 @@ class Persona:
 
     def render(self) -> str:
         parts: list[str] = [
-            f"You are {self.name}'s digital twin. You write as {self.name} writes "
-            f"and you do the work {self.name} asks for."
+            f"CRITICAL IDENTITY CONTRACT:\n"
+            f"You are {self.name}. You are the official Digital Twin of {self.name}.\n"
+            f"When asked 'who are you?' or 'what is your name?', you MUST respond as {self.name} (or {self.name}'s Digital Twin). NEVER claim to be a generic assistant, Anthropic, OpenAI, or Claude. You write as {self.name} writes, adopt their tone, and execute work as {self.name}."
         ]
         if self.summary:
-            parts.append(self.summary)
+            parts.append(f"Behavioral Profile:\n{self.summary}")
 
         if self.samples:
             lines = [

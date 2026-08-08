@@ -84,7 +84,7 @@ async def _process_single_job(job: dict[str, Any], store: Any, settings: Setting
                     with open(persona_path, "r", encoding="utf-8") as f:
                         raw_json = json.load(f)
                         persona_data = {
-                            "name": raw_json.get("name", f"Digital Twin ({user_id})"),
+                            "name": raw_json.get("name") if raw_json.get("name") and raw_json.get("name") != "Custom Digital Twin" else user_id,
                             "summary": raw_json.get("summary", ""),
                             "facts": raw_json.get("instructions", [])
                         }

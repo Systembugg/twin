@@ -96,6 +96,7 @@ def default_registry(
     the audit log becomes readable.
     """
     from twin.tools.filesystem import EditFile, ListDir, ReadFile, WriteFile
+    from twin.tools.search_knowledge import SearchKnowledge
     from twin.tools.shell import Bash
     from twin.tools.todo import TodoWrite
     from twin.tools.web_search import WebSearch
@@ -108,6 +109,7 @@ def default_registry(
         Bash(),
         TodoWrite(),
         WebSearch(),
+        SearchKnowledge(),
     ]
 
     if enable_subagents:

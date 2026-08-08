@@ -327,12 +327,27 @@ class OpenAICompatibleClient:
                         log.warning("Server rejected tools parameter, stripping tools...")
                         payload.pop("tools", None)
                         continue
-                if "rate_limit_exceeded" in str(exc).lower() or "429" in str(exc):
-                    if attempt < max_attempts - 1:
-                        sleep_s = 5 * (attempt + 1)
-                        log.warning("Groq rate limited (429), retrying in %ds... (attempt %d)", sleep_s, attempt + 1)
-                        await asyncio.sleep(sleep_s)
-                        continue
+                
+                err_msg = str(exc).lower()
+                is_transient = any(k in err_msg for k in [
+                    "peer closed connection", 
+                    "incomplete chunked read", 
+                    "remoteprotocolerror", 
+                    "connection error", 
+                    "apiconnectionerror", 
+                    "rate_limit_exceeded", 
+                    "429", 
+                    "server error",
+                    "500",
+                    "502",
+                    "503",
+                    "504"
+                ])
+                if is_transient and attempt < max_attempts - 1:
+                    sleep_s = 2 * (attempt + 1)
+                    log.warning("Network/API transient error (%s), retrying in %ds... (attempt %d/%d)", exc, sleep_s, attempt + 1, max_attempts)
+                    await asyncio.sleep(sleep_s)
+                    continue
                 raise exc
 
         ordered = [partial[i] for i in sorted(partial)]

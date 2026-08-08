@@ -310,11 +310,38 @@ def create_app(
         contents = await file.read()
         file_path.write_bytes(contents)
 
+        # Automatic RAG Vector Indexing for PDF, DOCX, CSV, TXT, etc.
+        indexed_chunks = 0
+        try:
+            from twin.memory.rag_extractor import chunk_text, extract_text_from_file
+            from twin.memory.vector import get_vector_store
+
+            extracted_text = extract_text_from_file(file_path)
+            if extracted_text.strip():
+                chunks = chunk_text(extracted_text, chunk_size=500, overlap=50)
+                vector_store = get_vector_store()
+                for idx, chunk in enumerate(chunks):
+                    await vector_store.add_memory(
+                        user_id=user_id,
+                        content=chunk,
+                        metadata={
+                            "filename": safe_file,
+                            "session_id": session_id,
+                            "chunk_index": idx,
+                            "total_chunks": len(chunks),
+                        },
+                    )
+                indexed_chunks = len(chunks)
+        except Exception as exc:
+            log.warning("Could not auto-index file %s into vector store: %s", safe_file, exc)
+
         return {
             "filename": safe_file,
             "size_bytes": len(contents),
             "status": "uploaded",
-            "message": f"File '{safe_file}' is now available in your sandbox for the AI to process."
+            "rag_indexed": indexed_chunks > 0,
+            "indexed_chunks": indexed_chunks,
+            "message": f"File '{safe_file}' uploaded and indexed with {indexed_chunks} semantic chunks."
         }
 
     return app
