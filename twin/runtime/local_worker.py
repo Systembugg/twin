@@ -115,11 +115,27 @@ async def _process_single_job(job: dict[str, Any], store: Any, settings: Setting
             async def worker_sink(event: Event):
                 if event.type.value == "tool_call":
                     tool_name = event.data.get("tool", "")
-                    append_audit_log(user_id, "TOOL_CALL", f"Executing tool [{tool_name}]")
+                    args = event.data.get("args", {})
+                    detail = ""
+                    if tool_name == "Bash":
+                        detail = f" | command: {args.get('command') or args.get('cmd') or ''}"
+                    elif tool_name in ("WriteFile", "ReadFile", "EditFile"):
+                        detail = f" | file: {args.get('path') or args.get('file') or ''}"
+                    elif tool_name == "TodoWrite":
+                        todos = args.get("todos", [])
+                        detail = f" | Plan: {len(todos)} tasks"
+                    elif tool_name == "SearchKnowledge":
+                        detail = f" | query: {args.get('query')}"
+                    append_audit_log(user_id, "TOOL_CALL", f"Executing [{tool_name}]{detail}")
                 elif event.type.value == "tool_result":
                     tool_name = event.data.get("tool", "")
                     is_err = event.data.get("is_error", False)
-                    append_audit_log(user_id, "TOOL_RESULT", f"[{tool_name}] -> {'ERROR' if is_err else 'SUCCESS'}")
+                    todos = event.data.get("todos")
+                    todo_str = ""
+                    if todos:
+                        done_cnt = sum(1 for t in todos if t.get("status") == "completed")
+                        todo_str = f" (Progress: {done_cnt}/{len(todos)} tasks completed)"
+                    append_audit_log(user_id, "TOOL_RESULT", f"[{tool_name}] -> {'ERROR' if is_err else 'SUCCESS'}{todo_str}")
 
             try:
                 history = await store.load_session_messages(user_id=user_id, session_id=session_id)
