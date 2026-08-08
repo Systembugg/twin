@@ -94,13 +94,19 @@ async def _process_single_job(job: dict[str, Any], store: Any, settings: Setting
             persona = persona_from_row(user_id, persona_data)
             registry = default_registry(enable_subagents=False, enable_memory=False)
 
+            # Auto-inject domain skill cheatsheets based on user prompt intent
+            from twin.skills.manager import SkillManager
+            skills_context = SkillManager().get_relevant_skills(message)
+            base_sys_prompt = build_system_prompt(persona)
+            final_sys_prompt = f"{base_sys_prompt}\n\n{skills_context}" if skills_context else base_sys_prompt
+
             deps = HarnessDeps(
                 model=build_model_client(settings),
                 summariser=build_summariser(settings),
                 registry=registry,
                 store=store,
                 sandbox=sandbox,
-                system_prompt=build_system_prompt(persona),
+                system_prompt=final_sys_prompt,
                 caps=settings.caps,
                 hooks=HookRegistry(),
                 permissions=PermissionPolicy(PermissionMode.AUTO),

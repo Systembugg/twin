@@ -147,13 +147,19 @@ class Worker:
             hooks = HookRegistry()
             hooks.on_post_tool_use(audit_hook(log))
 
+            # Auto-inject domain skill cheatsheets based on user initial message
+            from twin.skills.manager import SkillManager
+            skills_context = SkillManager().get_relevant_skills(getattr(run, "prompt", ""))
+            base_sys_prompt = build_system_prompt(persona)
+            final_sys_prompt = f"{base_sys_prompt}\n\n{skills_context}" if skills_context else base_sys_prompt
+
             deps = HarnessDeps(
                 model=build_model_client(settings),
                 summariser=build_summariser(settings),
                 registry=default_registry(),
                 store=self.store,
                 sandbox=sandbox,
-                system_prompt=build_system_prompt(persona),
+                system_prompt=final_sys_prompt,
                 caps=settings.caps,
                 hooks=hooks,
             )
