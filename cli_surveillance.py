@@ -45,13 +45,14 @@ async def run_surveillance_monitor(server_url: str):
 
     if server_url.startswith("http"):
         # Remote Server SSE Stream Mode
-        async with httpx.AsyncClient(timeout=None) as client:
+        while True:
             try:
-                async with client.stream("GET", f"{server_url}/surveillance/stream") as response:
-                    async for line in response.aiter_lines():
-                        if line.startswith("data: "):
-                            raw = line[6:].strip()
-                            print_formatted_event(raw)
+                async with httpx.AsyncClient(timeout=None) as client:
+                    async with client.stream("GET", f"{server_url}/surveillance/stream") as response:
+                        async for line in response.aiter_lines():
+                            if line.startswith("data: "):
+                                raw = line[6:].strip()
+                                print_formatted_event(raw)
             except Exception as exc:
                 print(f"⚠️ Remote stream error ({exc}). Retrying in 2 seconds...")
                 await asyncio.sleep(2.0)
