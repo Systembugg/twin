@@ -18,7 +18,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -76,7 +76,19 @@ def create_app(
     The caller owns `lifespan`, and must call `RunQueue(redis).ensure_group()`
     there. See `build_default_app` for the production wiring.
     """
+    from fastapi.middleware.cors import CORSMiddleware
+    
     app = FastAPI(title="twin", version="0.1.0", lifespan=lifespan)
+    
+    # Enable CORS for frontend integration
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
     queue = RunQueue(redis)
     bus = EventBus(redis)
     limiter = RateLimiter(redis=redis, quota=settings.quota)
@@ -276,6 +288,34 @@ def create_app(
             raise HTTPException(status_code=403, detail="Access denied")
 
         return FileResponse(path=str(file_path), filename=safe_file)
+
+    @app.post("/sessions/{session_id}/files")
+    async def upload_session_file(
+        session_id: str,
+        file: UploadFile = File(...),
+        user_id: str = Depends(current_user),
+    ):
+        """Uploads a file into the user's isolated workspace sandbox."""
+        from twin.sandbox.local import _safe_component
+
+        safe_user = _safe_component(user_id)
+        safe_session = _safe_component(session_id)
+        safe_file = Path(file.filename or "uploaded_file").name
+
+        workspace_root = Path(settings.workspace_root).resolve()
+        session_dir = workspace_root / safe_user / safe_session
+        session_dir.mkdir(parents=True, exist_ok=True)
+        file_path = session_dir / safe_file
+
+        contents = await file.read()
+        file_path.write_bytes(contents)
+
+        return {
+            "filename": safe_file,
+            "size_bytes": len(contents),
+            "status": "uploaded",
+            "message": f"File '{safe_file}' is now available in your sandbox for the AI to process."
+        }
 
     return app
 

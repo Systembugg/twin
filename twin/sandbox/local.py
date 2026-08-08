@@ -109,14 +109,14 @@ class LocalSandbox:
         if self._closed:
             raise SandboxError("Sandbox is closed.")
 
-        # Minimal environment: no inherited credentials. Anything the model can
-        # read, the model can exfiltrate through a tool result.
-        env = {
-            "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
-            "HOME": str(self.root),
-            "LANG": "C.UTF-8",
-            "TWIN_SESSION_ID": self.session_id,
-        }
+        # Inherit environment so Windows DNS/Winsock works, but scrub credentials
+        env = os.environ.copy()
+        for key in list(env.keys()):
+            if "API_KEY" in key or key.startswith("TWIN_") or "TOKEN" in key or "SECRET" in key:
+                del env[key]
+                
+        env["HOME"] = str(self.root)
+        env["TWIN_SESSION_ID"] = self.session_id
 
         kwargs: dict[str, Any] = {
             "cwd": str(self.root),

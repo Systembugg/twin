@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     build-essential \
+    dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -16,6 +17,9 @@ RUN mkdir -p /workspaces && chmod 777 /workspaces
 # Copy project definition and source code
 COPY pyproject.toml README.md schema.sql start_render.sh ./
 COPY twin ./twin
+
+# Convert Windows line endings (CRLF) to Linux (LF) and grant execution permissions
+RUN dos2unix start_render.sh && chmod +x start_render.sh
 
 # Install the package with server and openai dependencies
 RUN pip install --no-cache-dir -e ".[server,openai]"

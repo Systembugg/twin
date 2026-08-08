@@ -3,7 +3,7 @@ services:
     name: twin-enterprise-api
     env: docker
     plan: free
-    dockerCommand: bash start_render.sh
+    dockerCommand: bash /app/start_render.sh
     envVars:
       - key: TWIN_DATABASE_URL
         fromDatabase:
