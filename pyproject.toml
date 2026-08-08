@@ -17,6 +17,7 @@ server = [
     "asyncpg>=0.29",
     "pydantic>=2.7",
     "pyjwt[crypto]>=2.8.0",
+    "python-multipart>=0.0.9",
 ]
 # Groq, vLLM, Ollama, OpenRouter, Together — all one protocol, one client.
 openai = [
