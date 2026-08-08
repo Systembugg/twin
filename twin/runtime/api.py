@@ -223,12 +223,16 @@ def create_app(
 
             with open(log_path, "r", encoding="utf-8") as f:
                 f.seek(0, os.SEEK_END)
+                last_ping = time.time()
                 while True:
                     if await request.is_disconnected():
                         break
                     line = f.readline()
                     if not line:
                         await asyncio.sleep(0.3)
+                        if time.time() - last_ping > 5.0:
+                            yield ": ping\n\n"
+                            last_ping = time.time()
                         continue
                     yield f"data: {line.strip()}\n\n"
 
