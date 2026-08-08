@@ -325,10 +325,19 @@ async def _execute_one(
 
 
 def _tool_result_block(tool_use_id: str, result: ToolResult) -> dict[str, Any]:
+    content = result.content
+    if result.is_error:
+        content += (
+            "\n\n[STRUCTURED DEBUG TRIAGE INSTRUCTION]\n"
+            "1. Localize: Identify the exact failing line or parameter from the error output above.\n"
+            "2. Shift Strategy: Do NOT repeat the exact same broken code or tool parameters.\n"
+            "3. Minimal Targeted Fix: Apply a specific fix (e.g. write a python script generator or correct syntax).\n"
+            "4. Verify: Run a syntax or file integrity check before completing."
+        )
     block: dict[str, Any] = {
         "type": "tool_result",
         "tool_use_id": tool_use_id,
-        "content": result.content,
+        "content": content,
     }
     if result.is_error:
         block["is_error"] = True
