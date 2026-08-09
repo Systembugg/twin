@@ -75,11 +75,13 @@ async def run_surveillance_monitor(server_url: str):
 
 def main():
     parser = argparse.ArgumentParser(description="Real-Time Surveillance Terminal Monitor")
-    parser.add_argument("--url", "--server", type=str, default="http://127.0.0.1:8000", help="Server URL", dest="server")
+    parser.add_argument("positional_server", nargs="?", default=None, help="Server URL (positional)")
+    parser.add_argument("--url", "--server", type=str, default="http://127.0.0.1:8000", help="Server URL (flagged)", dest="server")
     args = parser.parse_args()
 
+    target_server = args.positional_server or args.server
     try:
-        asyncio.run(run_surveillance_monitor(args.server))
+        asyncio.run(run_surveillance_monitor(target_server))
     except KeyboardInterrupt:
         print("\nSurveillance Monitor stopped.")
 
