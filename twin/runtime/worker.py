@@ -205,6 +205,8 @@ class Worker:
             await self.queue.ack(job.entry_id)
 
     def _sink(self, user_id: str) -> Any:
+        async def _emit(event: Any) -> None:
+            await self.bus.publish(event)
             from twin.runtime.local_worker import append_audit_log
             if event.type.value == "tool_call":
                 tool_name = event.data.get("tool", "")
