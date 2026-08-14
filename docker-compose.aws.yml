@@ -30,6 +30,7 @@ services:
       - TWIN_USER_TOKENS_PER_HOUR=${TWIN_USER_TOKENS_PER_HOUR:-5000000}
       - TWIN_USER_RUNS_PER_MINUTE=${TWIN_USER_RUNS_PER_MINUTE:-60}
       - TWIN_USER_RUNS_PER_HOUR=${TWIN_USER_RUNS_PER_HOUR:-3600}
+      - TWIN_WORKSPACE_ROOT=/workspaces
       - TWIN_USER_MAX_CONCURRENT=${TWIN_USER_MAX_CONCURRENT:-10}
     volumes:
       - workspaces_data:/workspaces
@@ -67,6 +68,7 @@ services:
       - TWIN_MODEL=${TWIN_MODEL:-deepseek/deepseek-v4-flash-0731}
       - TWIN_MODEL_PRICE=${TWIN_MODEL_PRICE:-0.10,0.20}
       - TWIN_COMPACT_AT_TOKENS=${TWIN_COMPACT_AT_TOKENS:-80000}
+      - TWIN_WORKSPACE_ROOT=/workspaces
       - TWIN_MAX_ITERATIONS=${TWIN_MAX_ITERATIONS:-25}
     depends_on:
       - postgres
