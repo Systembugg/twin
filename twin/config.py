@@ -37,13 +37,13 @@ def register_price(model: str, input_per_m: float, output_per_m: float) -> None:
 class Caps:
     """Per-run limits. Every one of these must be independently enforceable."""
 
-    max_iterations: int = 25
-    max_wall_clock_s: float = 900.0
-    max_spend_usd: float = 100.00
+    max_iterations: int = 100
+    max_wall_clock_s: float = 1800.0
+    max_spend_usd: float = 200.00
 
-    max_tokens_per_turn: int = 1536
-    tool_timeout_s: float = 120.0
-    max_tool_output_chars: int = 30_000
+    max_tokens_per_turn: int = 8192
+    tool_timeout_s: float = 300.0
+    max_tool_output_chars: int = 50_000
 
     #: Compact once the request's input tokens cross this. Well below the 1M
     #: window on purpose: compaction should happen while there is still room
@@ -66,17 +66,17 @@ class Caps:
 class UserQuota:
     """Rolling per-user budget aligned with aicredits.in API rate limits."""
 
-    tokens_per_hour: int = 5_000_000
-    runs_per_minute: int = 60
-    runs_per_hour: int = 3600
-    max_concurrent_runs: int = 5
+    tokens_per_hour: int = 10_000_000
+    runs_per_minute: int = 120
+    runs_per_hour: int = 7200
+    max_concurrent_runs: int = 10
 
 
 @dataclass(frozen=True)
 class Settings:
     model: str = DEFAULT_MODEL
     analysis_model: str = DEFAULT_ANALYSIS_MODEL
-    effort: str = "high"  # low | medium | high | xhigh | max
+    effort: str = "low"  # low | medium | high | xhigh | max
     #: Empty means Anthropic. Set to an OpenAI-protocol base URL (Groq, vLLM,
     #: Ollama, OpenRouter…) to route through ``OpenAICompatibleClient``.
     base_url: str = ""

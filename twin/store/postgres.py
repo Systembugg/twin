@@ -181,19 +181,24 @@ class PostgresStore:
         self, *, user_id: str, session_id: str, limit: int = 200
     ) -> list[dict[str, Any]]:
         async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
+            rows = await conn.fetch(
                 """
                 SELECT messages FROM runs
-                 WHERE user_id = $1 AND session_id = $2 AND status = 'succeeded'
-                 ORDER BY created_at DESC LIMIT 1
+                 WHERE user_id = $1 AND session_id = $2 AND status IN ('succeeded', 'completed')
+                   AND id NOT LIKE 'sub-%'
+                 ORDER BY created_at ASC
                 """,
                 user_id,
                 session_id,
             )
-        if not row or not row["messages"]:
-            return []
-        messages = json.loads(row["messages"])
-        return messages[-limit:]
+        all_msgs: list[dict[str, Any]] = []
+        for r in rows:
+            if r["messages"]:
+                raw = r["messages"]
+                msgs = json.loads(raw) if isinstance(raw, str) else raw
+                if isinstance(msgs, list):
+                    all_msgs.extend(msgs)
+        return all_msgs[-limit:]
 
     async def append_event(self, *, user_id: str, run_id: str, event: Event) -> None:
         async with self._pool.acquire() as conn:

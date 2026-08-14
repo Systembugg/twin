@@ -15,11 +15,11 @@ from twin.llm.fake import FakeModelClient, text_response
 def test_subagent_tool_opt_in_flag():
     # By default, subagents are DISABLED (0 extra tokens, 0 risk)
     reg_default = default_registry(enable_subagents=False)
-    assert "invoke_subagent" not in reg_default.names()
+    assert "SubAgentSpawn" not in reg_default.names()
 
-    # When explicitly enabled, invoke_subagent IS registered
+    # When explicitly enabled, SubAgentSpawn IS registered
     reg_enabled = default_registry(enable_subagents=True)
-    assert "invoke_subagent" in reg_enabled.names()
+    assert "SubAgentSpawn" in reg_enabled.names()
 
 
 @pytest.mark.asyncio

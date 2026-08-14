@@ -25,12 +25,13 @@ from twin.events import EventEmitter, EventType
 from twin.harness import HarnessDeps, RunResult, run_harness
 from twin.hooks import HookRegistry, audit_hook
 from twin.llm.factory import build_model_client, build_summariser
-from twin.persona import Persona, build_system_prompt
+from twin.persona import Persona, build_system_prompt, SystemPrompt
 from twin.runtime.queue import EventBus, QueuedRun, RunQueue
 from twin.runtime.ratelimit import RateLimiter
 from twin.sandbox.local import LocalSandboxFactory
 from twin.store.base import RunStatus
 from twin.tools.registry import default_registry
+from twin.runtime.local_worker import append_audit_log
 
 log = logging.getLogger(__name__)
 
@@ -147,10 +148,18 @@ class Worker:
             hooks = HookRegistry()
             hooks.on_post_tool_use(audit_hook(log))
 
-            # Auto-inject domain skill cheatsheets based on user initial message
             from twin.skills.manager import SkillManager
-            skills_context = SkillManager().get_relevant_skills(getattr(run, "prompt", ""))
-            base_sys_prompt = build_system_prompt(persona)
+            user_prompt = ""
+            for m in run.messages:
+                if m.get("role") == "user":
+                    content = m.get("content", "")
+                    if isinstance(content, str):
+                        user_prompt += content + " "
+            skills_context = SkillManager().get_relevant_skills(user_prompt)
+            base_sys = build_system_prompt(persona)
+            base_text = base_sys.blocks[0]["text"] if base_sys.blocks else ""
+            combined_text = f"{base_text}\n\n{skills_context}" if skills_context else base_text
+            final_sys_prompt = SystemPrompt(blocks=[{"type": "text", "text": combined_text}])
             if skills_context:
                 append_audit_log(job.user_id, "SKILL_INJECTED", "Loaded 4 Core Agentic Skills + Intent Skill Cheatsheets into prompt context.")
             else:
@@ -179,13 +188,16 @@ class Worker:
 
             # A resumed run replays its persisted history and sends no new user
             # message — the history already contains it.
+            session_history = await self.store.load_session_messages(
+                user_id=job.user_id, session_id=job.session_id
+            )
             result: RunResult = await run_harness(
                 deps=deps,
                 user_id=job.user_id,
                 session_id=job.session_id,
                 run_id=job.run_id,
                 user_message=None if resumed else job.message,
-                history=run.messages,
+                history=session_history if session_history else run.messages,
                 scratch=run.scratch,
                 emitter=emitter,
             )

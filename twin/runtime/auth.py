@@ -47,12 +47,9 @@ def authenticate_token(
             options={"verify_exp": True, "verify_signature": True},
         )
         user_id = payload.get("sub")
-        if not user_id or not isinstance(user_id, str):
-            return None
-        return user_id
-    except (jwt.PyJWTError, Exception) as exc:
-        log.debug("JWT authentication failed: %s", exc)
-        # Fallback for local CLI testing with plain user_id tokens
-        if token and not token.startswith("ey"):
-            return token
-        return None
+        if user_id and isinstance(user_id, str):
+            return user_id
+    except Exception as exc:
+        log.debug("Strict JWT verification failed: %s", exc)
+
+    return None

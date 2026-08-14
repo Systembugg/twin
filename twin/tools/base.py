@@ -34,6 +34,8 @@ class ToolContext:
     timeout_s: float = 120.0
     #: Scratch space shared across tools within one run (TodoWrite uses it).
     scratch: dict[str, Any] = field(default_factory=dict)
+    #: Additional context provided by the caller
+    extras: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

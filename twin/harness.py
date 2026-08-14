@@ -113,6 +113,7 @@ async def run_harness(
         max_output_chars=deps.caps.max_tool_output_chars,
         timeout_s=deps.caps.tool_timeout_s,
         scratch=scratch,
+        extras={"harness_deps": deps},
     )
 
     if user_message is not None:
@@ -160,7 +161,7 @@ async def run_harness(
                     last_user_msg = m["content"].strip().lower()
                     break
 
-            active_tools = None if last_user_msg in _GREETINGS else tools
+            active_tools = tools
 
             response = await deps.model.complete(
                 system=system,

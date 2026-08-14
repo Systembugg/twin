@@ -74,11 +74,25 @@ def build_model_client(
     if not settings.base_url:
         return AnthropicModelClient(model=name, effort=effort or settings.effort)
 
-    api_key = (
-        os.environ.get("TWIN_API_KEY")
-        or os.environ.get("GROQ_API_KEY")
-        or os.environ.get("OPENAI_API_KEY")
-    )
+    keys = [
+        k.strip() for k in [
+            os.environ.get("TWIN_API_KEY"),
+            os.environ.get("TWIN_API_KEY_2"),
+            os.environ.get("TWIN_API_KEY_3"),
+            os.environ.get("TWIN_API_KEY_4"),
+            os.environ.get("TWIN_API_KEY_5"),
+            os.environ.get("TWIN_API_KEY_6"),
+            os.environ.get("OPENAI_API_KEY"),
+        ] if k and k.strip()
+    ]
+    if os.environ.get("TWIN_API_KEYS"):
+        for extra in os.environ.get("TWIN_API_KEYS", "").split(","):
+            if extra.strip() and extra.strip() not in keys:
+                keys.append(extra.strip())
+
+    import random
+    api_key = random.choice(keys) if keys else "not-needed"
+
     return OpenAICompatibleClient(
         model=name,
         base_url=resolve_base_url(settings.base_url),

@@ -44,7 +44,10 @@ class ReadFile(BaseTool):
     }
 
     async def run(self, args: dict[str, Any], ctx: ToolContext) -> ToolResult:
-        path = args["path"]
+        path = args.get("path")
+        if not path:
+            return ToolResult.error("ReadFile requires a 'path' parameter.")
+
         text = await ctx.sandbox.read_file(path)
         lines = text.splitlines()
         if not lines:
@@ -87,8 +90,15 @@ class WriteFile(BaseTool):
     }
 
     async def run(self, args: dict[str, Any], ctx: ToolContext) -> ToolResult:
-        path = args["path"]
-        written = await ctx.sandbox.write_file(path, args["content"])
+        path = args.get("path")
+        content = args.get("content")
+        if not path or content is None:
+            return ToolResult.error(
+                "WriteFile requires both 'path' (string) and 'content' (string) parameters. "
+                "For multi-line files or complex code, you can also use the Bash tool with a heredoc (cat << 'EOF' > filename)."
+            )
+
+        written = await ctx.sandbox.write_file(path, content)
         return ToolResult(f"Wrote {written} bytes to {path}.")
 
 
@@ -119,9 +129,12 @@ class EditFile(BaseTool):
     }
 
     async def run(self, args: dict[str, Any], ctx: ToolContext) -> ToolResult:
-        path = args["path"]
-        old = args["old_string"]
-        new = args["new_string"]
+        path = args.get("path")
+        old = args.get("old_string")
+        new = args.get("new_string")
+        if not path or old is None or new is None:
+            return ToolResult.error("EditFile requires 'path', 'old_string', and 'new_string' parameters.")
+
         replace_all = bool(args.get("replace_all"))
 
         if old == new:

@@ -20,9 +20,9 @@ def test_dashboard_endpoint_returns_200_html():
 
     res_dash = client.get("/dashboard")
     assert res_dash.status_code == 200
-    assert "Twin Mission Control" in res_dash.text
+    assert "Twin Enterprise Studio" in res_dash.text
     assert "text/html" in res_dash.headers["content-type"]
 
     res_root = client.get("/")
     assert res_root.status_code == 200
-    assert "Multi-User Session Stress Tester" in res_root.text
+    assert "Twin Enterprise Studio" in res_root.text

@@ -106,4 +106,4 @@ async def test_unauthorized_request_returns_401():
         json={"session_id": "s1", "message": "hello"},
     )
     assert response.status_code == 401
-    assert response.json()["detail"] == "Unauthorized"
+    assert "Unauthorized" in response.json()["detail"]

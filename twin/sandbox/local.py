@@ -47,7 +47,6 @@ class LocalSandbox:
         clean_path = str(path)
         if ":" in clean_path:
             clean_path = clean_path.split(":", 1)[1]
-        clean_path = clean_path.lstrip("/\\")
 
         resolved = (self.root / Path(clean_path)).resolve()
 

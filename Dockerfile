@@ -17,6 +17,7 @@ RUN mkdir -p /workspaces && chmod 777 /workspaces
 # Copy project definition and source code
 COPY pyproject.toml README.md schema.sql start_render.sh ./
 COPY twin ./twin
+COPY analyzer_engine ./analyzer_engine
 
 # Convert Windows line endings (CRLF) to Linux (LF) and grant execution permissions
 RUN dos2unix start_render.sh && chmod +x start_render.sh

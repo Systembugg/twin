@@ -1,5 +1,5 @@
 import pytest
-from twin.memory.vector import InMemoryVectorStore
+from twin.memory.vector import LocalVectorStore
 from twin.tools.registry import default_registry
 from twin.tools.memory import SaveMemory, SearchMemory
 from twin.tools.base import ToolContext
@@ -18,8 +18,8 @@ def test_memory_tools_opt_in_flag():
 
 
 @pytest.mark.asyncio
-async def test_vector_memory_store_multi_tenant_isolation():
-    store = InMemoryVectorStore()
+async def test_vector_memory_store_multi_tenant_isolation(tmp_path):
+    store = LocalVectorStore(workspace_root=str(tmp_path))
 
     # Add memory for User A
     await store.add_memory("user_a", "User A prefers Python and FastAPI for backend development.")
@@ -38,8 +38,8 @@ async def test_vector_memory_store_multi_tenant_isolation():
 
 
 @pytest.mark.asyncio
-async def test_memory_tools_execution():
-    store = InMemoryVectorStore()
+async def test_memory_tools_execution(tmp_path):
+    store = LocalVectorStore(workspace_root=str(tmp_path))
     ctx_a = ToolContext(
         user_id="user_a",
         session_id="s1",

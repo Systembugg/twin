@@ -14,6 +14,8 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import os
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator
@@ -96,7 +98,7 @@ def create_app(
     async def current_user(authorization: str | None = Header(default=None)) -> str:
         user_id = await authenticate(authorization)
         if not user_id:
-            raise HTTPException(status_code=401, detail="Unauthorized")
+            raise HTTPException(status_code=401, detail="Unauthorized: Missing or invalid Authorization header")
         return user_id
 
     @app.get("/healthz")
@@ -315,7 +317,12 @@ def create_app(
         if not file_path.is_relative_to(user_root):
             raise HTTPException(status_code=403, detail="Access denied")
 
-        return FileResponse(path=str(file_path), filename=safe_file)
+        return FileResponse(
+            path=str(file_path),
+            filename=safe_file,
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f'attachment; filename="{safe_file}"'}
+        )
 
     @app.post("/sessions/{session_id}/files")
     async def upload_session_file(
@@ -371,6 +378,78 @@ def create_app(
             "indexed_chunks": indexed_chunks,
             "message": f"File '{safe_file}' uploaded and indexed with {indexed_chunks} semantic chunks."
         }
+
+    @app.post("/persona/analyze")
+    async def analyze_and_update_persona(
+        file: UploadFile = File(...),
+        user_id: str = Depends(current_user),
+    ):
+        import json
+        from analyzer_engine.analyze_user import SYSTEM_PROMPT
+        from twin.persona import Persona, StyleSample
+        from openai import AsyncOpenAI
+
+        contents = await file.read()
+        raw_text = contents.decode("utf-8", errors="ignore").strip()
+        if not raw_text:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+        api_key = (
+            os.environ.get("OPENAI_API_KEY")
+            or os.environ.get("GROQ_API_KEY")
+            or os.environ.get("OPENROUTER_API_KEY")
+            or os.environ.get("TWIN_API_KEY")
+            or "dummy_key"
+        )
+        base_url = settings.base_url or os.environ.get("TWIN_BASE_URL") or "https://aicredits.in/v1"
+        model_name = settings.model or "llama-3.3-70b-versatile"
+
+        client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        try:
+            response = await client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": f"Subject User ID: {user_id}\n\nRaw Sample Data:\n{raw_text[:15000]}"}
+                ],
+                temperature=0.2,
+                response_format={"type": "json_object"}
+            )
+            raw_json = response.choices[0].message.content or "{}"
+            parsed = json.loads(raw_json)
+
+            samples = [
+                StyleSample(context=s.get("context", "sample"), text=s.get("text", ""))
+                for s in parsed.get("samples", [])
+                if s.get("text")
+            ]
+            persona = Persona(
+                name=user_id,
+                summary=parsed.get("summary", ""),
+                samples=tuple(samples),
+                facts=tuple(parsed.get("instructions", [])),
+            )
+
+            # Save persona to store if supported
+            save_fn = getattr(store, "save_persona", None)
+            if save_fn is not None and callable(save_fn):
+                try:
+                    await save_fn(user_id=user_id, persona=persona)
+                except Exception as e:
+                    log.warning("Could not persist persona: %s", e)
+
+            return {
+                "status": "success",
+                "user_id": user_id,
+                "persona_name": f"{user_id}++, the Digital Twin of {user_id}",
+                "summary": parsed.get("summary", ""),
+                "sample_count": len(samples),
+                "instructions_count": len(parsed.get("instructions", [])),
+                "message": f"Persona for {user_id} successfully extracted and updated!"
+            }
+        except Exception as exc:
+            log.error("Failed to analyze persona file: %s", exc)
+            raise HTTPException(status_code=500, detail=f"Persona analysis failed: {exc}")
 
     return app
 

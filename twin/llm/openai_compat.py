@@ -100,11 +100,11 @@ def to_openai_messages(
             if results:
                 for block in results:
                     text_res = _as_text(block.get("content", ""))
-                    # Always include clean text representation so open-source models see tool outputs
                     out.append(
                         {
-                            "role": "user",
-                            "content": f"[Tool Result for {block.get('tool_use_id')}]:\n{text_res}",
+                            "role": "tool",
+                            "tool_call_id": block.get("tool_use_id"),
+                            "content": text_res,
                         }
                     )
             else:
@@ -183,17 +183,52 @@ def to_content_blocks(text: str, tool_calls: list[dict[str, str]]) -> list[dict[
 
 
 def _parse_arguments(name: str, raw: str) -> dict[str, Any]:
-    """Weaker models emit malformed JSON. Return `{}` so the tool raises a
-    validation error the model can *see and correct*, rather than crashing the
-    run on a parse failure it never learns about."""
+    """Parse tool arguments cleanly with robust auto-repair for streaming JSON."""
     if not raw:
         return {}
     try:
         parsed = json.loads(raw)
+        if isinstance(parsed, dict):
+            return parsed
     except json.JSONDecodeError:
-        log.warning("malformed tool arguments tool=%s raw=%r", name, raw[:200])
-        return {}
-    return parsed if isinstance(parsed, dict) else {}
+        pass
+
+    # Repair unclosed quotes / braces from streaming truncations
+    cleaned = raw.strip()
+    if not cleaned.endswith("}"):
+        if cleaned.count('"') % 2 != 0:
+            cleaned += '"'
+        cleaned += "}"
+    try:
+        parsed = json.loads(cleaned)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+
+    # Regex fallback extraction for tool keys (path, command, code, query)
+    import re
+    res: dict[str, Any] = {}
+    path_m = re.search(r'"path"\s*:\s*"([^"]+)"', raw)
+    cmd_m = re.search(r'"command"\s*:\s*"([^"]+)"', raw)
+    query_m = re.search(r'"query"\s*:\s*"([^"]+)"', raw)
+    if path_m:
+        res["path"] = path_m.group(1)
+    if cmd_m:
+        res["command"] = cmd_m.group(1)
+    if query_m:
+        res["query"] = query_m.group(1)
+
+    # Extract content string if present
+    content_m = re.search(r'"content"\s*:\s*"(.*)"', raw, re.DOTALL)
+    if content_m:
+        res["content"] = content_m.group(1)
+
+    if res:
+        return res
+
+    log.warning("malformed tool arguments tool=%s raw=%r", name, raw[:200])
+    return {}
 
 
 class OpenAICompatibleClient:
@@ -243,7 +278,7 @@ class OpenAICompatibleClient:
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": to_openai_messages(system, messages),
-            "max_tokens": min(max_tokens, 1536),
+            "max_tokens": max_tokens,
             "stream": "groq" not in self.base_url.lower(),
             "stream_options": {"include_usage": True},
         }

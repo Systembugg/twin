@@ -16,15 +16,23 @@ services:
       - TWIN_VECTOR_STORE=qdrant
       - TWIN_QDRANT_URL=http://qdrant:6333
       - TWIN_API_KEY=${TWIN_API_KEY}
+      - TWIN_API_KEY_2=${TWIN_API_KEY_2}
+      - TWIN_API_KEY_3=${TWIN_API_KEY_3}
+      - TWIN_API_KEY_4=${TWIN_API_KEY_4}
+      - TWIN_API_KEY_5=${TWIN_API_KEY_5}
+      - TWIN_API_KEY_6=${TWIN_API_KEY_6}
       - TAVILY_API_KEY=${TAVILY_API_KEY}
       - TWIN_BASE_URL=${TWIN_BASE_URL:-https://aicredits.in/v1}
       - TWIN_MODEL=${TWIN_MODEL:-deepseek/deepseek-v4-flash-0731}
+      - TWIN_MODEL_PRICE=${TWIN_MODEL_PRICE:-0.10,0.20}
+      - TWIN_COMPACT_AT_TOKENS=${TWIN_COMPACT_AT_TOKENS:-80000}
+      - TWIN_MAX_ITERATIONS=${TWIN_MAX_ITERATIONS:-25}
       - TWIN_USER_TOKENS_PER_HOUR=${TWIN_USER_TOKENS_PER_HOUR:-5000000}
       - TWIN_USER_RUNS_PER_MINUTE=${TWIN_USER_RUNS_PER_MINUTE:-60}
       - TWIN_USER_RUNS_PER_HOUR=${TWIN_USER_RUNS_PER_HOUR:-3600}
-      - TWIN_USER_MAX_CONCURRENT=${TWIN_USER_MAX_CONCURRENT:-5}
+      - TWIN_USER_MAX_CONCURRENT=${TWIN_USER_MAX_CONCURRENT:-10}
     volumes:
-      - workspaces_data:/tmp/twin-workspaces
+      - workspaces_data:/workspaces
     depends_on:
       - postgres
       - redis
@@ -42,16 +50,24 @@ services:
     restart: always
     command: python -m twin.runtime.worker
     volumes:
-      - workspaces_data:/tmp/twin-workspaces
+      - workspaces_data:/workspaces
     environment:
       - TWIN_DATABASE_URL=postgresql://twin:twinpassword@postgres:5432/twin
       - TWIN_REDIS_URL=redis://redis:6379/0
       - TWIN_VECTOR_STORE=qdrant
       - TWIN_QDRANT_URL=http://qdrant:6333
       - TWIN_API_KEY=${TWIN_API_KEY}
+      - TWIN_API_KEY_2=${TWIN_API_KEY_2}
+      - TWIN_API_KEY_3=${TWIN_API_KEY_3}
+      - TWIN_API_KEY_4=${TWIN_API_KEY_4}
+      - TWIN_API_KEY_5=${TWIN_API_KEY_5}
+      - TWIN_API_KEY_6=${TWIN_API_KEY_6}
       - TAVILY_API_KEY=${TAVILY_API_KEY}
       - TWIN_BASE_URL=${TWIN_BASE_URL:-https://aicredits.in/v1}
       - TWIN_MODEL=${TWIN_MODEL:-deepseek/deepseek-v4-flash-0731}
+      - TWIN_MODEL_PRICE=${TWIN_MODEL_PRICE:-0.10,0.20}
+      - TWIN_COMPACT_AT_TOKENS=${TWIN_COMPACT_AT_TOKENS:-80000}
+      - TWIN_MAX_ITERATIONS=${TWIN_MAX_ITERATIONS:-25}
     depends_on:
       - postgres
       - redis

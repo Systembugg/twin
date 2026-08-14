@@ -87,7 +87,7 @@ class ToolRegistry:
 
 
 def default_registry(
-    enable_subagents: bool = False, enable_memory: bool = False
+    *, exclude: set[str] | None = None, enable_memory: bool = False, enable_subagents: bool = False
 ) -> ToolRegistry:
     """The standard toolset.
 
@@ -101,6 +101,8 @@ def default_registry(
     from twin.tools.todo import TodoWrite
     from twin.tools.web_search import WebSearch
 
+    exclude = exclude or set()
+
     tools: list[BaseTool] = [
         ReadFile(),
         WriteFile(),
@@ -112,14 +114,15 @@ def default_registry(
         SearchKnowledge(),
     ]
 
-    if enable_subagents:
-        from twin.tools.subagent import InvokeSubagent
-
-        tools.append(InvokeSubagent())
-
     if enable_memory:
         from twin.tools.memory import SaveMemory, SearchMemory
 
         tools.extend([SearchMemory(), SaveMemory()])
 
-    return ToolRegistry(tools)
+    registry = ToolRegistry(tools)
+
+    if enable_subagents and "SubAgentSpawn" not in exclude:
+        from twin.tools.subagent import SubAgentSpawn
+        registry.register(SubAgentSpawn())
+
+    return registry

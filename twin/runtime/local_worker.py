@@ -16,14 +16,14 @@ from twin.events import Event, EventEmitter
 from twin.harness import HarnessDeps, run_harness
 from twin.hooks import HookRegistry, PermissionMode, PermissionPolicy
 from twin.llm.factory import build_model_client, build_summariser
-from twin.persona import build_system_prompt
+from twin.persona import build_system_prompt, SystemPrompt
 from twin.runtime.personas import persona_from_row
 from twin.sandbox.local import LocalSandboxFactory
 from twin.store.base import RunStatus
 from twin.tools.registry import default_registry
 
 log = logging.getLogger(__name__)
-LOG_PATH = Path(r"C:\tmp\twin-workspaces\audit_stream.log")
+LOG_PATH = Path(Settings.from_env().workspace_root) / "audit_stream.log"
 
 _QUEUE: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
 _SEMAPHORE = asyncio.Semaphore(3)  # Allow 3 parallel workers concurrently!
@@ -97,10 +97,10 @@ async def _process_single_job(job: dict[str, Any], store: Any, settings: Setting
             # Auto-inject domain skill cheatsheets based on user prompt intent
             from twin.skills.manager import SkillManager
             mgr = SkillManager()
-            skills_context = mgr.get_relevant_skills(message)
-            base_sys_prompt = build_system_prompt(persona)
-            final_sys_prompt = f"{base_sys_prompt}\n\n{skills_context}" if skills_context else base_sys_prompt
-
+            base_sys = build_system_prompt(persona)
+            base_text = base_sys.blocks[0]["text"] if base_sys.blocks else ""
+            combined_text = f"{base_text}\n\n{skills_context}" if skills_context else base_text
+            final_sys_prompt = SystemPrompt(blocks=[{"type": "text", "text": combined_text}])
             if skills_context:
                 append_audit_log(user_id, "SKILL_INJECTED", "Loaded 4 Core Agentic Skills + Intent Skill Cheatsheets into prompt context.")
             else:

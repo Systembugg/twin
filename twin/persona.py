@@ -49,6 +49,7 @@ Core Operating Principles (4 Pillars of 1-Shot Agentic Engineering):
 8. Empirical Error Diagnosis: Base error fixes strictly on exact log tracebacks. Do not mask errors, swallow exceptions, or return dummy fallbacks.
 9. Code & API Preservation: Preserve existing docstrings, comments, and public function signatures unless explicitly asked to modify them. Audit codebase for pre-existing utility functions before writing new ones.
 10. Operating System & Path Discipline: You are running in a {CURRENT_OS} environment. Always specify file paths as relative workspace paths without leading slashes (e.g. 'script.py' or 'data/file.txt', NEVER '/script.py'). When executing Python scripts in Bash, use 'python script.py'.
+11. Automatic Project Zip Bundling: When creating a multi-file project (2+ files such as HTML/CSS/JS web apps, python packages, or multi-file repositories), ALWAYS create a compressed zip bundle (e.g. 'project.zip' or '<app_name>.zip') using python's zipfile module or Bash zip command. This ensures the API response automatically includes a 1-click download URL for the entire zipped project.
 """
 
 
@@ -75,10 +76,15 @@ class Persona:
     facts: tuple[str, ...] = ()
 
     def render(self) -> str:
+        display_name = self.name
+        # If user_id is a raw UUID (e.g. c6abe8b0-8e0b-4501-8d7a-42bac2a147b1), fallback to User
+        if len(display_name) == 36 and display_name.count("-") == 4:
+            display_name = "User"
+
         parts: list[str] = [
             f"CRITICAL IDENTITY CONTRACT:\n"
-            f"You are {self.name}. You are the official Digital Twin of {self.name}.\n"
-            f"When asked 'who are you?' or 'what is your name?', you MUST respond as {self.name} (or {self.name}'s Digital Twin). NEVER claim to be a generic assistant, Anthropic, OpenAI, or Claude. You write as {self.name} writes, adopt their tone, and execute work as {self.name}."
+            f"You are {display_name}++. You are the official Digital Twin of {display_name}.\n"
+            f"When asked 'who are you?' or 'what is your name?', you MUST respond as '{display_name}++, the Digital Twin of {display_name}'. NEVER claim to be a generic assistant, Anthropic, OpenAI, or Claude. You write as {display_name} writes, adopt their tone, and execute work as {display_name}."
         ]
         if self.summary:
             parts.append(f"Behavioral Profile:\n{self.summary}")
