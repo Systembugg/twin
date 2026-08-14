@@ -92,7 +92,7 @@ async def _process_single_job(job: dict[str, Any], store: Any, settings: Setting
                     log.warning("Could not load output_persona.json: %s", exc)
 
             persona = persona_from_row(user_id, persona_data)
-            registry = default_registry(enable_subagents=False, enable_memory=False)
+            registry = default_registry(enable_subagents=True, enable_memory=True)
 
             # Auto-inject domain skill cheatsheets based on user prompt intent
             from twin.skills.manager import SkillManager

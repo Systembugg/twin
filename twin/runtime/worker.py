@@ -168,7 +168,7 @@ class Worker:
             deps = HarnessDeps(
                 model=build_model_client(settings),
                 summariser=build_summariser(settings),
-                registry=default_registry(),
+                registry=default_registry(enable_subagents=True, enable_memory=True),
                 store=self.store,
                 sandbox=sandbox,
                 system_prompt=final_sys_prompt,
